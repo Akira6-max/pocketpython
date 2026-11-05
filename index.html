@@ -4,7 +4,7 @@
 <title>Pocket Python</title>
 <link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><meta name="theme-color" content="#1e1e1e">
 <style>
-:root{color-scheme:dark;--bg:#1e1e1e;--bar:#252526;--fg:#d4d4d4;--ac:#0e639c;--fs:14px;--lh:21px}
+:root{color-scheme:dark;--bg:#1e1e1e;--bar:#252526;--fg:#d4d4d4;--ac:#0e639c}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;overflow:hidden}
 body{display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
@@ -13,12 +13,12 @@ header{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bar)
 #nm{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;font-weight:600}
 #run{background:#2ea043}#stop{background:#d13438;display:none}
 #ed{flex:1;min-height:0;display:flex}
-#cw{flex:1;min-width:0;overflow:auto;touch-action:pan-x pan-y;overscroll-behavior:contain;scroll-padding-left:44px}
-#row{display:flex;width:max-content;min-width:100%;min-height:100%}
-#gut,#hl,#ta{font:var(--fs)/var(--lh) ui-monospace,Menlo,Consolas,monospace;letter-spacing:0;tab-size:4}
-#gut{flex:none;position:sticky;left:0;z-index:2;min-width:44px;padding:10px 8px 120px 6px;text-align:right;color:#6e7681;background:var(--bg);white-space:pre;user-select:none}
+#cw{flex:1;min-width:0;position:relative;overflow:clip;touch-action:none}
+#row{position:absolute;left:0;top:0;display:flex;width:max-content;min-width:100%;min-height:100%;transform-origin:0 0}
+#gut,#hl,#ta{font:14px/21px ui-monospace,Menlo,Consolas,monospace;letter-spacing:0;tab-size:4}
+#gut{flex:none;min-width:44px;padding:10px 8px 120px 6px;text-align:right;color:#6e7681;white-space:pre;user-select:none}
 #sc{flex:1 0 auto;position:relative}
-#hl,#ta{margin:0;padding:10px 160px 120px 10px;border:0;white-space:pre}
+#hl,#ta{margin:0;padding:10px 40px 120px 10px;border:0;white-space:pre}
 #hl{pointer-events:none;color:var(--fg)}
 #ta{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;resize:none;outline:0;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#fff}
 #hl i{font-style:normal}.c{color:#6a9955}.s{color:#ce9178}.n{color:#b5cea8}.f{color:#dcdcaa}.k1{color:#c586c0}.k2{color:#569cd6}.t{color:#4ec9b0}.v{color:#9cdcfe}
@@ -94,22 +94,43 @@ try{const r=JSON.parse(localStorage.getItem(K));if(r&&r.files&&r.files.length)S=
 S.folders=S.folders||[];S.open=S.open||{};S.files.forEach(f=>f.folder=f.folder||'');
 const cur=()=>S.files.find(f=>f.id===S.cur)||S.files[0];
 let st;const save=()=>{clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}},300)};
-/* text size: measure the real drawn size so line spacing always matches */
-let pr,pk,LH=21;
-function eff(px){if(!pr){pr=h('span',{style:'position:absolute;left:-9999px;visibility:hidden;white-space:pre;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:0'},'MMMMMMMMMM');document.body.append(pr);pr.style.fontSize='100px';pk=pr.getBoundingClientRect().width/1000}pr.style.fontSize=px+'px';return pr.getBoundingClientRect().width/10/pk}
-function fs(){S.fs=Math.min(28,Math.max(6,S.fs));LH=eff(S.fs)*1.5;const r=document.documentElement.style;r.setProperty('--fs',S.fs+'px');r.setProperty('--lh',LH.toFixed(2)+'px')}
-function setFs(n,x,y){n=Math.min(28,Math.max(6,Math.round(n*10)/10));if(n===S.fs)return;
- const r=cw.getBoundingClientRect(),g=gut.offsetWidth,cx=(x??r.left+r.width/2)-r.left,cy=(y??r.top+r.height/2)-r.top;
- const u=cw.scrollLeft+cx-g,v=cw.scrollTop+cy,l0=LH;S.fs=n;fs();const k=LH/l0;
- cw.scrollLeft=u*k+g-cx;cw.scrollTop=v*k-cy;save()}
-function paint(){const v=ta.value;hl.innerHTML=hi(v);gut.textContent=Array.from({length:v.split('\n').length},(_,i)=>i+1).join('\n')}
-function load(){S.cur=cur().id;ta.value=cur().code;$('nm').textContent=cur().name+' \u25BE';paint();cw.scrollTo(0,0)}
-/* pinch zoom around the point between your fingers */
-let pd=0,pf=0;
-const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-cw.addEventListener('touchstart',e=>{pd=e.touches.length===2?dist(e.touches):0;pf=S.fs},{passive:true});
-cw.addEventListener('touchmove',e=>{if(e.touches.length===2&&pd){e.preventDefault();const[a,b]=e.touches;setFs(pf*dist(e.touches)/pd,(a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2)}},{passive:false});
-cw.addEventListener('touchend',()=>{pd=0});
+S.fs=Math.min(28,Math.max(6,S.fs||14));
+/* code layer: line numbers, code and typing box move and zoom together, like a sticker on a photo */
+const row=$('row'),Z=()=>S.fs/14;
+let X=0,Y=0,g=null,samples=[],raf=0;
+const probe=h('span',{style:'position:absolute;left:-9999px;visibility:hidden;white-space:pre;font:14px ui-monospace,Menlo,Consolas,monospace'},'MMMMMMMMMM');document.body.append(probe);
+const CW0=probe.getBoundingClientRect().width/10;
+const bounds=()=>[Math.min(0,cw.clientWidth-row.offsetWidth*Z()-40),Math.min(0,cw.clientHeight-row.offsetHeight*Z()-120)];
+const show=()=>{row.style.transform='translate('+X+'px,'+Y+'px) scale('+Z()+')'};
+function settle(){const[a,b]=bounds();X=Math.max(a,Math.min(0,X));Y=Math.max(b,Math.min(0,Y));show()}
+function zoomBy(f){const w=cw.clientWidth/2,hh=cw.clientHeight/2,u=(w-X)/Z(),v=(hh-Y)/Z();S.fs=Math.round(Math.min(28,Math.max(6,S.fs*f))*10)/10;X=w-u*Z();Y=hh-v*Z();settle();save()}
+function ensure(){const p=ta.selectionStart,v=ta.value,ls=p?v.lastIndexOf('\n',p-1)+1:0,ln=v.slice(0,p).split('\n').length-1,z=Z(),w=cw.clientWidth,hh=cw.clientHeight;
+ const px=X+(gut.offsetWidth+10+(p-ls)*CW0)*z,py=Y+(20+ln*21)*z;
+ if(px>w-40)X-=px-w+40;else if(px<40)X+=40-px;
+ if(py>hh-40)Y-=py-hh+40;else if(py<40)Y+=40-py;settle()}
+function glide(vx,vy){let t=performance.now();const step=now=>{const dt=Math.min(now-t,50);t=now;X+=vx*dt;Y+=vy*dt;const k=Math.pow(0.95,dt/16),[a,b]=bounds();vx*=k;vy*=k;
+ if(X>0||X<a){X=Math.max(a,Math.min(0,X));vx=0}if(Y>0||Y<b){Y=Math.max(b,Math.min(0,Y));vy=0}
+ show();if(Math.hypot(vx,vy)>0.03)raf=requestAnimationFrame(step);else settle()};raf=requestAnimationFrame(step)}
+const pts=e=>Array.from(e.touches,t=>({x:t.clientX,y:t.clientY})),gap=p=>Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+cw.addEventListener('touchstart',e=>{cancelAnimationFrame(raf);const p=pts(e),r=cw.getBoundingClientRect();samples=[];
+ if(p.length===1)g={m:'pan',x:p[0].x,y:p[0].y,X:X,Y:Y,moved:false};
+ else if(p.length===2)g={m:'zoom',d:gap(p),f:S.fs,u:((p[0].x+p[1].x)/2-r.left-X)/Z(),v:((p[0].y+p[1].y)/2-r.top-Y)/Z()};
+ else g=null},{passive:true});
+cw.addEventListener('touchmove',e=>{if(!g)return;const p=pts(e),r=cw.getBoundingClientRect();
+ if(g.m==='pan'&&p.length===1){const dx=p[0].x-g.x,dy=p[0].y-g.y;if(!g.moved&&Math.hypot(dx,dy)<8)return;
+  g.moved=true;e.preventDefault();const[a,b]=bounds();X=Math.max(a-60,Math.min(60,g.X+dx));Y=Math.max(b-60,Math.min(60,g.Y+dy));show();
+  samples.push({t:e.timeStamp,x:X,y:Y});samples=samples.filter(q=>e.timeStamp-q.t<100)}
+ else if(g.m==='zoom'&&p.length===2){e.preventDefault();
+  S.fs=Math.round(Math.min(28,Math.max(6,g.f*gap(p)/g.d))*10)/10;
+  X=(p[0].x+p[1].x)/2-r.left-g.u*Z();Y=(p[0].y+p[1].y)/2-r.top-g.v*Z();show()}},{passive:false});
+cw.addEventListener('touchend',e=>{if(!g)return;const m=g.m,mv=g.moved;
+ if(e.touches.length===1){const t=e.touches[0];g={m:'pan',x:t.clientX,y:t.clientY,X:X,Y:Y,moved:true}}else g=null;
+ if(m==='zoom'){settle();save()}
+ else if(mv&&!g){if(samples.length>1&&samples[samples.length-1].t>samples[0].t){const a=samples[0],b=samples[samples.length-1];glide((b.x-a.x)/(b.t-a.t),(b.y-a.y)/(b.t-a.t))}else settle()}},{passive:true});
+cw.addEventListener('touchcancel',()=>{g=null;settle()},{passive:true});
+cw.addEventListener('click',e=>{if(e.target===cw||e.target===row){ta.focus({preventScroll:true});ta.setSelectionRange(ta.value.length,ta.value.length);ensure()}});
+function paint(){const v=ta.value;hl.innerHTML=hi(v);gut.textContent=Array.from({length:v.split('\n').length},(_,i)=>i+1).join('\n');settle()}
+function load(){S.cur=cur().id;ta.value=cur().code;$('nm').textContent=cur().name+' \u25BE';X=Y=0;paint()}
 /* editing helpers */
 let busy=false;const put=t=>{busy=true;document.execCommand('insertText',false,t);busy=false};
 const bt=(l,f)=>h('button',{textContent:l,onmousedown:e=>e.preventDefault(),onclick:f});
@@ -117,9 +138,9 @@ function suggest(){const p=ta.selectionStart,v=ta.value,m=/[A-Za-z_]\w*$/.exec(v
  if(!m||m[0].length<2||ta.selectionEnd!==p){sg.style.display='none';return}
  const w=m[0],set=new Set([...KW1,...KW2,...BI,...TY,...(v.match(/[A-Za-z_]\w{2,}/g)||[])]);
  const r=[...set].filter(x=>x!==w&&x.startsWith(w)).sort((a,b)=>a.length-b.length).slice(0,8);
- sg.style.display=r.length?'flex':'none';r.forEach(x=>sg.append(bt(x,()=>{ta.focus();ta.setSelectionRange(p-w.length,p);put(x)})))}
+ sg.style.display=r.length?'flex':'none';r.forEach(x=>sg.append(bt(x,()=>{ta.focus({preventScroll:true});ta.setSelectionRange(p-w.length,p);put(x)})))}
 const CL={'(':')','[':']','{':'}','"':'"',"'":"'"};
-function sym(s){ta.focus();const p=ta.selectionStart,v=ta.value;
+function sym(s){ta.focus({preventScroll:true});const p=ta.selectionStart,v=ta.value;
  if(')]}"\''.includes(s)&&v[p]===s&&ta.selectionEnd===p){ta.setSelectionRange(p+1,p+1);return}
  if(CL[s]&&ta.selectionEnd===p){put(s+CL[s]);ta.setSelectionRange(p+1,p+1)}else put(s)}
 ta.addEventListener('input',e=>{
@@ -128,14 +149,14 @@ ta.addEventListener('input',e=>{
   if(ch==='\n'){const line=v.slice(v.lastIndexOf('\n',p-2)+1,p-1),ind=/^[ \t]*/.exec(line)[0]+(/:\s*$/.test(line)?'    ':'');if(ind)put(ind)}
   else if(')]}"\''.includes(ch)&&nx===ch){busy=true;document.execCommand('forwardDelete');busy=false}
   else if(CL[ch]&&!(/["']/.test(ch)&&/\w/.test(pv))&&!(nx&&/\w/.test(nx))){put(CL[ch]);ta.setSelectionRange(p,p)}}
- cur().code=ta.value;save();paint();ta.scrollTop=ta.scrollLeft=0;suggest()});
+ cur().code=ta.value;save();paint();ta.scrollTop=ta.scrollLeft=0;ensure();suggest()});
 ta.addEventListener('click',suggest);
 ta.addEventListener('focus',()=>$('op').style.display='none');
 ta.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==ta){$('op').style.display='';$('sg').style.display='none'}},150));
-$('sy').append(bt('A\u2212',()=>setFs(S.fs-1)),bt('A+',()=>setFs(S.fs+1)));
+$('sy').append(bt('A\u2212',()=>zoomBy(1/1.12)),bt('A+',()=>zoomBy(1.12)));
 ['Tab',':','(',')','[',']','{','}','"',"'",'=','#','_','.',',','+','-','*','/','<','>'].forEach((s,i)=>$('sy').append(bt(s,()=>sym(i?s:'    '))));
 $('un').onmousedown=$('re').onmousedown=e=>e.preventDefault();
-$('un').onclick=()=>{ta.focus();document.execCommand('undo')};$('re').onclick=()=>{ta.focus();document.execCommand('redo')};
+$('un').onclick=()=>{ta.focus({preventScroll:true});document.execCommand('undo')};$('re').onclick=()=>{ta.focus({preventScroll:true});document.execCommand('redo')};
 /* engine */
 const WSRC=`importScripts('https://cdn.jsdelivr.net/npm/pyodide@0.26.4/pyodide.js');
 let py,fl,u8;
@@ -223,6 +244,6 @@ $('imp').onchange=async e=>{let c=0;const zs=[];for(const f of e.target.files){t
  e.target.value='';
  if(zs.length>1){if(c){S.cur=S.files[S.files.length-1].id;load();save()}zipPick(zs)}else if(zs.length===1)addZ(zs);else done(c)};
 $('nm').onclick=files;
-fs();load();engine();
+load();engine();new ResizeObserver(()=>{settle();ensure()}).observe(cw);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
