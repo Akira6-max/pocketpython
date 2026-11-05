@@ -14,9 +14,9 @@ header{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bar)
 #run{background:#2ea043}#stop{background:#d13438;display:none}
 #ed{position:relative;flex:1;min-height:0;display:flex}
 #gut,#hl,#ta{font:var(--fs)/var(--lh) ui-monospace,Menlo,Consolas,monospace;letter-spacing:0}
-#gut{width:44px;padding:10px 8px 10px 0;text-align:right;color:#6e7681;overflow:hidden;white-space:pre;user-select:none}
+#gut{width:44px;padding:10px 8px 120px 0;text-align:right;color:#6e7681;overflow:hidden;white-space:pre;user-select:none}
 #cw{position:relative;flex:1;min-width:0}
-#hl,#ta{position:absolute;inset:0;margin:0;padding:10px;border:0;white-space:pre;tab-size:4}
+#hl,#ta{position:absolute;inset:0;margin:0;padding:10px 160px 120px 10px;border:0;white-space:pre;tab-size:4}
 #hl{pointer-events:none;overflow:hidden;color:var(--fg)}
 #ta{background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#fff;resize:none;outline:0;overflow:auto}
 #hl i{font-style:normal}.c{color:#6a9955}.s{color:#ce9178}.n{color:#b5cea8}.f{color:#dcdcaa}.k1{color:#c586c0}.k2{color:#569cd6}.t{color:#4ec9b0}.v{color:#9cdcfe}
@@ -33,13 +33,12 @@ header{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bar)
 #sheet h2{margin:0 0 10px;font-size:18px}
 .row{display:flex;gap:8px;margin-bottom:8px}.row button{flex:1}.row .nm{flex:3;text-align:left;background:#2d2d30;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row .nm.on{outline:2px solid var(--ac)}
 #sheet input[type=text]{width:100%;height:44px;font:16px system-ui,sans-serif;background:#1e1e1e;color:var(--fg);border:1px solid #555;border-radius:8px;padding:0 10px;margin-bottom:10px}
-#hs{background:var(--bar);padding:0 10px}#hr{width:100%;height:30px;accent-color:#0e639c;display:block;margin:0}
 .row .fd{background:#094771}.mv{display:block;width:100%;margin-bottom:8px;text-align:left}.in{margin-left:14px}
+.pk{display:flex;align-items:center;gap:10px;padding:10px;background:#2d2d30;border-radius:8px;margin-bottom:6px;word-break:break-all}.pk input{width:22px;height:22px;flex:none}
 .cap{font-size:13px;color:#9da5b4;margin:0 0 10px}
 </style></head><body>
 <header><button id="nm"></button><button id="un">Undo</button><button id="re">Redo</button><button id="run">&#9654; Run</button><button id="stop">&#9632; Stop</button></header>
 <div id="ed"><div id="gut"></div><div id="cw"><pre id="hl" aria-hidden="true"></pre><textarea id="ta" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Code editor"></textarea></div></div>
-<div id="hs"><input type="range" id="hr" min="0" max="0" value="0" aria-label="Scroll code left and right"></div>
 <div class="bar" id="sg"></div><div class="bar" id="sy"></div>
 <div id="op"><div id="oh">Output <span id="st"></span><button id="sz">Panel size</button><button id="clr">Clear</button></div><pre id="out"></pre></div>
 <div id="ov"><div id="sheet"></div></div><input type="file" id="imp" multiple hidden>
@@ -69,11 +68,11 @@ try{const r=JSON.parse(localStorage.getItem(K));if(r&&r.files&&r.files.length)S=
 S.folders=S.folders||[];S.open=S.open||{};S.files.forEach(f=>f.folder=f.folder||'');
 const cur=()=>S.files.find(f=>f.id===S.cur)||S.files[0];
 let st;const save=()=>{clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}},300)};
-function hsync(){const r=$('hr'),m=Math.max(0,ta.scrollWidth-ta.clientWidth);r.max=m;r.value=ta.scrollLeft;$('hs').style.display=m>4?'':'none'}
-function sync(){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;gut.scrollTop=ta.scrollTop;hsync()}
-$('hr').oninput=()=>{ta.scrollLeft=+$('hr').value;sync()};
+function sync(){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;gut.scrollTop=ta.scrollTop}
 function paint(){const v=ta.value;hl.innerHTML=hi(v);gut.textContent=Array.from({length:v.split('\n').length},(_,i)=>i+1).join('\n');sync()}
-function fs(){const r=document.documentElement.style;r.setProperty('--fs',S.fs+'px');r.setProperty('--lh',Math.round(S.fs*1.5)+'px')}
+let pr,pk;
+function eff(px){if(!pr){pr=h('span',{style:'position:absolute;left:-9999px;visibility:hidden;white-space:pre;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:0'},'MMMMMMMMMM');document.body.append(pr);pr.style.fontSize='100px';pk=pr.getBoundingClientRect().width/1000}pr.style.fontSize=px+'px';return pr.getBoundingClientRect().width/10/pk}
+function fs(){S.fs=Math.min(28,Math.max(6,S.fs));const r=document.documentElement.style;r.setProperty('--fs',S.fs+'px');r.setProperty('--lh',Math.max(3,Math.round(eff(S.fs)*1.5))+'px')}
 function load(){ta.value=cur().code;$('nm').textContent=cur().name+' \u25BE';paint();S.cur=cur().id}
 let busy=false;const put=t=>{busy=true;document.execCommand('insertText',false,t);busy=false};
 const ins=t=>{ta.focus();put(t)};
@@ -95,8 +94,17 @@ ta.addEventListener('input',e=>{
   else if(CL[ch]&&!(/["']/.test(ch)&&/\w/.test(pv))&&!(nx&&/\w/.test(nx))){put(CL[ch]);ta.setSelectionRange(p,p)}}
  cur().code=ta.value;save();paint();suggest()});
 ta.addEventListener('scroll',sync);ta.addEventListener('click',suggest);
+let tx=0,ty=0,tl=0,hz=null,pd=0,pf=0;
+const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+ta.addEventListener('touchstart',e=>{if(e.touches.length===2){pd=dist(e.touches);pf=S.fs;hz=null}else{const t=e.touches[0];tx=t.clientX;ty=t.clientY;tl=ta.scrollLeft;hz=null;pd=0}},{passive:true});
+ta.addEventListener('touchmove',e=>{
+ if(e.touches.length===2&&pd){const n=Math.min(28,Math.max(6,Math.round(pf*dist(e.touches)/pd)));if(n!==S.fs){S.fs=n;fs();paint();save()}if(e.cancelable)e.preventDefault();return}
+ if(e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-tx,dy=t.clientY-ty;
+ if(hz===null&&(Math.abs(dx)>8||Math.abs(dy)>8))hz=Math.abs(dx)>Math.abs(dy);
+ if(hz&&e.cancelable){e.preventDefault();ta.scrollLeft=tl-dx;sync()}},{passive:false});
 ta.addEventListener('focus',()=>$('op').style.display='none');
 ta.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==ta){$('op').style.display='';$('sg').style.display='none'}},150));
+$('sy').append(bt('A\u2212',()=>zoom(-1)),bt('A+',()=>zoom(1)));
 ['Tab',':','(',')','[',']','{','}','"',"'",'=','#','_','.',',','+','-','*','/','<','>'].forEach((s,i)=>$('sy').append(bt(s,()=>sym(i?s:'    '))));
 $('un').onmousedown=$('re').onmousedown=e=>e.preventDefault();
 $('un').onclick=()=>{ta.focus();document.execCommand('undo')};$('re').onclick=()=>{ta.focus();document.execCommand('redo')};
@@ -170,7 +178,7 @@ const dl=(b,n)=>{const a=h('a',{href:URL.createObjectURL(b),download:n});documen
 const exp=()=>dl(new Blob([ta.value],{type:'text/plain'}),cur().name);
 const expZip=()=>dl(zipOf(S.files.map(f=>({path:(f.folder?f.folder.replace(/\//g,'_')+'/':'')+f.name.replace(/\//g,'_'),text:f.code}))),'pocket-python-scripts.zip');
 function newF(){const f=mk('script'+(S.files.length+1)+'.py','',cur().folder);S.files.push(f);S.cur=f.id;load();save()}
-function zoom(d){S.fs=Math.min(24,Math.max(10,S.fs+d));fs();paint();save()}
+function zoom(d){S.fs=Math.min(28,Math.max(6,S.fs+d));fs();paint();save()}
 const two=(key,label,go,back)=>h('button',{textContent:arm===key?'Tap again':label,style:'color:#ff8a80',onclick:()=>{if(arm!==key){arm=key;clearTimeout(armT);armT=setTimeout(()=>{arm=null;if(scr===key)back()},3000);back();return}arm=null;go()}});
 function files(){scr='l';
  const row=(f,n)=>h('div',{className:'row'+(n?' in':'')},h('button',{className:'nm'+(f.id===S.cur?' on':''),textContent:f.name,onclick:()=>{S.cur=f.id;load();save();closeS()}}),h('button',{textContent:'Options',onclick:()=>opts(f)}));
@@ -192,10 +200,19 @@ function fopts(n){scr='f'+n;sheet(h('h2',{},'Folder: '+n),
  h('div',{className:'row'},h('button',{textContent:'Rename',onclick:()=>dlg('Rename folder',n,v=>{v=v&&v.trim();if(v&&v!==n){S.files.forEach(f=>{if(f.folder===n)f.folder=v});S.folders=S.folders.map(x=>x===n?v:x);S.open[v]=S.open[n];delete S.open[n];save()}files()})}),two('f'+n,'Delete folder',()=>{S.files.forEach(f=>{if(f.folder===n)f.folder=''});S.folders=S.folders.filter(x=>x!==n);delete S.open[n];save();files()},()=>fopts(n))),
  h('p',{className:'cap'},'Deleting a folder keeps its scripts. They move to the main list.'),h('button',{textContent:'Back',style:'width:100%',onclick:files}))}
 $('nm').onclick=files;
-$('imp').onchange=async e=>{let c=0;for(const f of e.target.files){try{
- if(/\.zip$/i.test(f.name)){for(const z of await unzip(await f.arrayBuffer())){const ps=z.path.split('/'),nm=ps.pop(),fo=ps[0]||'';if(/__MACOSX/.test(z.path)||nm.startsWith('.')||!/\.(py|txt)$/i.test(nm))continue;if(fo&&!S.folders.includes(fo))S.folders.push(fo);S.files.push(mk(nm,z.text,fo));c++}}
+function done(c){closeS();if(c){S.cur=S.files[S.files.length-1].id;load();save();stat('Imported '+c+' file'+(c>1?'s':''))}else stat('Nothing imported',1)}
+function addZ(list){for(const z of list){const ps=z.path.split('/'),nm=ps.pop(),fo=ps[0]||'';if(fo&&!S.folders.includes(fo))S.folders.push(fo);S.files.push(mk(nm,z.text,fo))}done(list.length)}
+function zipPick(en){scr='z';const sel=new Set(),ib=h('button',{textContent:'Import selected (0)',onclick:()=>addZ(en.filter((_,i)=>sel.has(i)))});
+ const upd=()=>ib.textContent='Import selected ('+sel.size+')';
+ const cbs=en.map((z,i)=>h('input',{type:'checkbox',onchange:e=>{e.target.checked?sel.add(i):sel.delete(i);upd()}}));
+ sheet(h('h2',{},'Choose what to import'),...en.map((z,i)=>h('label',{className:'pk'},cbs[i],h('span',{},z.path))),
+  h('div',{className:'row'},h('button',{textContent:'Select all',onclick:()=>{cbs.forEach((c,i)=>{c.checked=true;sel.add(i)});upd()}}),h('button',{textContent:'Clear',onclick:()=>{cbs.forEach(c=>c.checked=false);sel.clear();upd()}})),
+  h('div',{className:'row'},h('button',{textContent:'Cancel',onclick:closeS}),ib))}
+$('imp').onchange=async e=>{let c=0;const zs=[];for(const f of e.target.files){try{
+ if(/\.zip$/i.test(f.name))for(const z of await unzip(await f.arrayBuffer())){const nm=z.path.split('/').pop();if(!/__MACOSX/.test(z.path)&&!nm.startsWith('.')&&/\.(py|txt)$/i.test(nm))zs.push(z)}
  else{S.files.push(mk(f.name,await f.text(),cur().folder));c++}}catch(x){}}
- e.target.value='';closeS();if(c){S.cur=S.files[S.files.length-1].id;load();save();stat('Imported '+c+' file'+(c>1?'s':''))}else stat('Nothing imported',1)};
-fs();load();engine();addEventListener('resize',hsync);
+ e.target.value='';
+ if(zs.length>1){if(c){S.cur=S.files[S.files.length-1].id;load();save()}zipPick(zs)}else if(zs.length===1)addZ(zs);else done(c)};
+fs();load();engine();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
