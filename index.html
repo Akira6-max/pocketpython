@@ -33,13 +33,16 @@ header{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bar)
 #sheet h2{margin:0 0 10px;font-size:18px}
 .row{display:flex;gap:8px;margin-bottom:8px}.row button{flex:1}.row .nm{flex:3;text-align:left;background:#2d2d30;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row .nm.on{outline:2px solid var(--ac)}
 #sheet input[type=text]{width:100%;height:44px;font:16px system-ui,sans-serif;background:#1e1e1e;color:var(--fg);border:1px solid #555;border-radius:8px;padding:0 10px;margin-bottom:10px}
+#hs{background:var(--bar);padding:0 10px}#hr{width:100%;height:30px;accent-color:#0e639c;display:block;margin:0}
+.row .fd{background:#094771}.mv{display:block;width:100%;margin-bottom:8px;text-align:left}.in{margin-left:14px}
 .cap{font-size:13px;color:#9da5b4;margin:0 0 10px}
 </style></head><body>
 <header><button id="nm"></button><button id="un">Undo</button><button id="re">Redo</button><button id="run">&#9654; Run</button><button id="stop">&#9632; Stop</button></header>
 <div id="ed"><div id="gut"></div><div id="cw"><pre id="hl" aria-hidden="true"></pre><textarea id="ta" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Code editor"></textarea></div></div>
+<div id="hs"><input type="range" id="hr" min="0" max="0" value="0" aria-label="Scroll code left and right"></div>
 <div class="bar" id="sg"></div><div class="bar" id="sy"></div>
-<div id="op"><div id="oh">Output <span id="st"></span><button id="clr">Clear</button></div><pre id="out"></pre></div>
-<div id="ov"><div id="sheet"></div></div><input type="file" id="imp" accept=".py,.txt" hidden>
+<div id="op"><div id="oh">Output <span id="st"></span><button id="sz">Panel size</button><button id="clr">Clear</button></div><pre id="out"></pre></div>
+<div id="ov"><div id="sheet"></div></div><input type="file" id="imp" multiple hidden>
 <script>
 /*HL*/
 const KW1=new Set('if elif else for while try except finally with return yield raise import from as break continue pass assert del global nonlocal async await match case'.split(' '));
@@ -60,12 +63,15 @@ function hi(src){let o='',i=0,m,prev='';RE.lastIndex=0;
 const $=id=>document.getElementById(id);
 const h=(t,a={},...c)=>{const e=document.createElement(t);for(const k in a){const v=a[k];if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k in e)e[k]=v;else e.setAttribute(k,v)}c.flat().forEach(x=>x!=null&&e.append(x));return e};
 const ta=$('ta'),hl=$('hl'),gut=$('gut'),out=$('out'),K='pypocket-v1';
-const mk=(name,code='')=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,code});
+const mk=(name,code='',folder='')=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,code,folder});
 let S={files:[{id:'a1',name:'main.py',code:'name = "Akira"\nfor i in range(3):\n    print(f"Hello, {name} {i}")\n'}],cur:'a1',fs:14};
 try{const r=JSON.parse(localStorage.getItem(K));if(r&&r.files&&r.files.length)S=r}catch(e){}
+S.folders=S.folders||[];S.open=S.open||{};S.files.forEach(f=>f.folder=f.folder||'');
 const cur=()=>S.files.find(f=>f.id===S.cur)||S.files[0];
 let st;const save=()=>{clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}},300)};
-function sync(){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;gut.scrollTop=ta.scrollTop}
+function hsync(){const r=$('hr'),m=Math.max(0,ta.scrollWidth-ta.clientWidth);r.max=m;r.value=ta.scrollLeft;$('hs').style.display=m>4?'':'none'}
+function sync(){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;gut.scrollTop=ta.scrollTop;hsync()}
+$('hr').oninput=()=>{ta.scrollLeft=+$('hr').value;sync()};
 function paint(){const v=ta.value;hl.innerHTML=hi(v);gut.textContent=Array.from({length:v.split('\n').length},(_,i)=>i+1).join('\n');sync()}
 function fs(){const r=document.documentElement.style;r.setProperty('--fs',S.fs+'px');r.setProperty('--lh',Math.round(S.fs*1.5)+'px')}
 function load(){ta.value=cur().code;$('nm').textContent=cur().name+' \u25BE';paint();S.cur=cur().id}
@@ -128,30 +134,68 @@ function run(){if(running)return;ta.blur();
  out.textContent='';running=true;ui();t0=performance.now();stat('Running\u2026');wk.postMessage({t:'run',code:ta.value})}
 function stop(){if(!running)return;wk.terminate();running=false;add('\nStopped.\n',1);ui();engine();stat('Stopped, restarting Python\u2026',1)}
 $('run').onclick=run;$('stop').onclick=stop;$('clr').onclick=()=>out.textContent='';
+let pz=0;$('sz').onclick=()=>{pz=(pz+1)%3;$('op').style.height=['36%','14%','62%'][pz]};
 /* scripts sheet */
 function sheet(...c){$('sheet').replaceChildren(...c);$('ov').classList.add('show')}
-let inList=false,lock=false,arm=null,armT;
-const closeS=()=>{inList=false;$('ov').classList.remove('show')};
+let scr='',lock=false,arm=null,armT;
+const closeS=()=>{scr='';$('ov').classList.remove('show')};
 $('ov').onclick=e=>{if(e.target.id==='ov'&&!lock)closeS()};
-function dlg(title,def,ok,lk){lock=!!lk;inList=false;const i=h('input',{type:'text',value:def,autocomplete:'off',autocapitalize:'off',spellcheck:false});
+function dlg(title,def,ok,lk){lock=!!lk;scr='d';const i=h('input',{type:'text',value:def,autocomplete:'off',autocapitalize:'off',spellcheck:false});
  const done=v=>{lock=false;closeS();ok(v)};
  i.addEventListener('keydown',e=>{if(e.key==='Enter')done(i.value)});
  sheet(h('h2',{},title),i,h('div',{className:'row'},h('button',{textContent:'Cancel',onclick:()=>done(lk?'':null)}),h('button',{textContent:'OK',onclick:()=>done(i.value)})));setTimeout(()=>i.focus(),50)}
-function newF(){const f=mk('script'+(S.files.length+1)+'.py');S.files.push(f);S.cur=f.id;load();save()}
-function exp(){const a=h('a',{href:URL.createObjectURL(new Blob([ta.value],{type:'text/plain'})),download:cur().name});document.body.append(a);a.click();a.remove()}
+/*ZIP*/
+const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc=u=>{let c=-1;for(let i=0;i<u.length;i++)c=crcT[(c^u[i])&255]^(c>>>8);return(c^-1)>>>0};
+function zipOf(items){const en=new TextEncoder(),parts=[],cd=[];let off=0;
+ for(const it of items){const n=en.encode(it.path),d=en.encode(it.text),c=crc(d);
+  const l=new DataView(new ArrayBuffer(30));l.setUint32(0,0x04034b50,true);l.setUint16(4,20,true);l.setUint16(6,0x800,true);l.setUint16(12,0x21,true);l.setUint32(14,c,true);l.setUint32(18,d.length,true);l.setUint32(22,d.length,true);l.setUint16(26,n.length,true);
+  parts.push(l.buffer,n,d);
+  const g=new DataView(new ArrayBuffer(46));g.setUint32(0,0x02014b50,true);g.setUint16(4,20,true);g.setUint16(6,20,true);g.setUint16(8,0x800,true);g.setUint16(14,0x21,true);g.setUint32(16,c,true);g.setUint32(20,d.length,true);g.setUint32(24,d.length,true);g.setUint16(28,n.length,true);g.setUint32(42,off,true);
+  cd.push(g.buffer,n);off+=30+n.length+d.length}
+ const cl=cd.reduce((a,b)=>a+b.byteLength,0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,items.length,true);e.setUint16(10,items.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
+ return new Blob([...parts,...cd,e.buffer],{type:'application/zip'})}
+async function unzip(buf){const v=new DataView(buf),u=new Uint8Array(buf),res=[];let e=u.length-22;while(e>=0&&v.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw 0;
+ const n=v.getUint16(e+10,true);let p=v.getUint32(e+16,true);
+ for(let i=0;i<n;i++){const m=v.getUint16(p+10,true),cs=v.getUint32(p+20,true),nl=v.getUint16(p+28,true),xl=v.getUint16(p+30,true),cl=v.getUint16(p+32,true),lo=v.getUint32(p+42,true),name=new TextDecoder().decode(u.slice(p+46,p+46+nl));p+=46+nl+xl+cl;
+  if(name.endsWith('/'))continue;
+  const ds=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true);let d=u.slice(ds,ds+cs);
+  if(m===8)d=new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  else if(m!==0)continue;
+  res.push({path:name,text:new TextDecoder().decode(d)})}
+ return res}
+/*ENDZIP*/
+const fnames=()=>[...new Set([...S.folders,...S.files.map(f=>f.folder).filter(Boolean)])];
+const dl=(b,n)=>{const a=h('a',{href:URL.createObjectURL(b),download:n});document.body.append(a);a.click();a.remove()};
+const exp=()=>dl(new Blob([ta.value],{type:'text/plain'}),cur().name);
+const expZip=()=>dl(zipOf(S.files.map(f=>({path:(f.folder?f.folder.replace(/\//g,'_')+'/':'')+f.name.replace(/\//g,'_'),text:f.code}))),'pocket-python-scripts.zip');
+function newF(){const f=mk('script'+(S.files.length+1)+'.py','',cur().folder);S.files.push(f);S.cur=f.id;load();save()}
 function zoom(d){S.fs=Math.min(24,Math.max(10,S.fs+d));fs();paint();save()}
-function files(){inList=true;sheet(h('h2',{},'Scripts'),...S.files.map(f=>h('div',{className:'row'},
- h('button',{className:'nm'+(f.id===S.cur?' on':''),textContent:f.name,onclick:()=>{S.cur=f.id;load();save();closeS()}}),
- h('button',{textContent:'Rename',onclick:()=>dlg('Rename script',f.name,v=>{if(v&&v.trim()){f.name=v.trim();save();load()}files()})}),
- h('button',{textContent:arm===f.id?'Tap again':'Delete',style:'color:#ff8a80',onclick:()=>{
-  if(arm!==f.id){arm=f.id;clearTimeout(armT);armT=setTimeout(()=>{arm=null;if(inList)files()},3000);files();return}
-  arm=null;S.files=S.files.filter(x=>x!==f);if(!S.files.length)S.files.push(mk('main.py'));if(S.cur===f.id)S.cur=S.files[0].id;save();load();files()}}))),
- h('p',{className:'cap'},'Tap a script to open it. Delete needs two taps.'),
- h('div',{className:'row'},h('button',{textContent:'+ New script',onclick:()=>{newF();closeS()}}),h('button',{textContent:'Import a .py file',onclick:()=>$('imp').click()})),
- h('div',{className:'row'},h('button',{textContent:'Save as .py file',onclick:exp}),h('button',{textContent:'Smaller text',onclick:()=>zoom(-1)}),h('button',{textContent:'Bigger text',onclick:()=>zoom(1)})),
- h('button',{textContent:'Close',style:'width:100%',onclick:closeS}))}
+const two=(key,label,go,back)=>h('button',{textContent:arm===key?'Tap again':label,style:'color:#ff8a80',onclick:()=>{if(arm!==key){arm=key;clearTimeout(armT);armT=setTimeout(()=>{arm=null;if(scr===key)back()},3000);back();return}arm=null;go()}});
+function files(){scr='l';
+ const row=(f,n)=>h('div',{className:'row'+(n?' in':'')},h('button',{className:'nm'+(f.id===S.cur?' on':''),textContent:f.name,onclick:()=>{S.cur=f.id;load();save();closeS()}}),h('button',{textContent:'Options',onclick:()=>opts(f)}));
+ sheet(h('h2',{},'Scripts'),
+  ...fnames().flatMap(n=>{const fl=S.files.filter(f=>f.folder===n),op=S.open[n];return[h('div',{className:'row'},h('button',{className:'nm fd',textContent:(op?'\u25BE ':'\u25B8 ')+n+' ('+fl.length+')',onclick:()=>{S.open[n]=!op;save();files()}}),h('button',{textContent:'Options',onclick:()=>fopts(n)})),...(op?fl.map(f=>row(f,1)):[])]}),
+  ...S.files.filter(f=>!f.folder).map(f=>row(f)),
+  h('p',{className:'cap'},'Tap a script to open it. Tap a folder to open or close it.'),
+  h('div',{className:'row'},h('button',{textContent:'+ New script',onclick:()=>{newF();closeS()}}),h('button',{textContent:'+ New folder',onclick:()=>dlg('New folder','',v=>{v=v&&v.trim();if(v&&!fnames().includes(v)){S.folders.push(v);S.open[v]=true;save()}files()})})),
+  h('div',{className:'row'},h('button',{textContent:'Import files or .zip',onclick:()=>$('imp').click()})),
+  h('div',{className:'row'},h('button',{textContent:'Export this script (.py)',onclick:exp}),h('button',{textContent:'Export all (.zip)',onclick:expZip})),
+  h('div',{className:'row'},h('button',{textContent:'Smaller text',onclick:()=>zoom(-1)}),h('button',{textContent:'Bigger text',onclick:()=>zoom(1)})),
+  h('button',{textContent:'Close',style:'width:100%',onclick:closeS}))}
+function opts(f){scr='o'+f.id;sheet(h('h2',{},f.name),
+ h('div',{className:'row'},h('button',{textContent:'Rename',onclick:()=>dlg('Rename script',f.name,v=>{if(v&&v.trim()){f.name=v.trim();save();load()}files()})}),h('button',{textContent:'Move to folder',onclick:()=>move(f)})),
+ h('div',{className:'row'},two('o'+f.id,'Delete',()=>{S.files=S.files.filter(x=>x!==f);if(!S.files.length)S.files.push(mk('main.py'));if(S.cur===f.id)S.cur=S.files[0].id;save();load();files()},()=>opts(f)),h('button',{textContent:'Back',onclick:files})))}
+function move(f){scr='m';sheet(h('h2',{},'Move '+f.name+' to'),...['',...fnames()].map(n=>h('button',{className:'nm mv'+(f.folder===n?' on':''),textContent:n||'No folder',onclick:()=>{f.folder=n;save();files()}})),
+ h('button',{className:'mv',textContent:'+ New folder',onclick:()=>dlg('New folder','',v=>{v=v&&v.trim();if(v){if(!S.folders.includes(v))S.folders.push(v);f.folder=v;S.open[v]=true;save()}files()})}),h('button',{className:'mv',textContent:'Back',onclick:()=>opts(f)}))}
+function fopts(n){scr='f'+n;sheet(h('h2',{},'Folder: '+n),
+ h('div',{className:'row'},h('button',{textContent:'Rename',onclick:()=>dlg('Rename folder',n,v=>{v=v&&v.trim();if(v&&v!==n){S.files.forEach(f=>{if(f.folder===n)f.folder=v});S.folders=S.folders.map(x=>x===n?v:x);S.open[v]=S.open[n];delete S.open[n];save()}files()})}),two('f'+n,'Delete folder',()=>{S.files.forEach(f=>{if(f.folder===n)f.folder=''});S.folders=S.folders.filter(x=>x!==n);delete S.open[n];save();files()},()=>fopts(n))),
+ h('p',{className:'cap'},'Deleting a folder keeps its scripts. They move to the main list.'),h('button',{textContent:'Back',style:'width:100%',onclick:files}))}
 $('nm').onclick=files;
-$('imp').onchange=async e=>{const f=e.target.files[0];if(!f)return;const x=mk(f.name,await f.text());S.files.push(x);S.cur=x.id;load();save();closeS();e.target.value=''};
-fs();load();engine();
+$('imp').onchange=async e=>{let c=0;for(const f of e.target.files){try{
+ if(/\.zip$/i.test(f.name)){for(const z of await unzip(await f.arrayBuffer())){const ps=z.path.split('/'),nm=ps.pop(),fo=ps[0]||'';if(/__MACOSX/.test(z.path)||nm.startsWith('.')||!/\.(py|txt)$/i.test(nm))continue;if(fo&&!S.folders.includes(fo))S.folders.push(fo);S.files.push(mk(nm,z.text,fo));c++}}
+ else{S.files.push(mk(f.name,await f.text(),cur().folder));c++}}catch(x){}}
+ e.target.value='';closeS();if(c){S.cur=S.files[S.files.length-1].id;load();save();stat('Imported '+c+' file'+(c>1?'s':''))}else stat('Nothing imported',1)};
+fs();load();engine();addEventListener('resize',hsync);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
