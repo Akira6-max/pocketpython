@@ -12,13 +12,15 @@ button{font:inherit;color:inherit;background:#3a3d41;border:0;border-radius:8px;
 header{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bar)}
 #nm{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:none;font-weight:600}
 #run{background:#2ea043}#stop{background:#d13438;display:none}
-#ed{position:relative;flex:1;min-height:0;display:flex}
-#gut,#hl,#ta{font:var(--fs)/var(--lh) ui-monospace,Menlo,Consolas,monospace;letter-spacing:0}
-#gut{width:44px;padding:10px 8px 120px 0;text-align:right;color:#6e7681;overflow:hidden;white-space:pre;user-select:none}
-#cw{position:relative;flex:1;min-width:0}
-#hl,#ta{position:absolute;inset:0;margin:0;padding:10px 160px 120px 10px;border:0;white-space:pre;tab-size:4}
-#hl{pointer-events:none;overflow:hidden;color:var(--fg)}
-#ta{background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#fff;resize:none;outline:0;overflow:auto}
+#ed{flex:1;min-height:0;display:flex}
+#cw{flex:1;min-width:0;overflow:auto;touch-action:pan-x pan-y;overscroll-behavior:contain;scroll-padding-left:44px}
+#row{display:flex;width:max-content;min-width:100%;min-height:100%}
+#gut,#hl,#ta{font:var(--fs)/var(--lh) ui-monospace,Menlo,Consolas,monospace;letter-spacing:0;tab-size:4}
+#gut{flex:none;position:sticky;left:0;z-index:2;min-width:44px;padding:10px 8px 120px 6px;text-align:right;color:#6e7681;background:var(--bg);white-space:pre;user-select:none}
+#sc{flex:1 0 auto;position:relative}
+#hl,#ta{margin:0;padding:10px 160px 120px 10px;border:0;white-space:pre}
+#hl{pointer-events:none;color:var(--fg)}
+#ta{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;resize:none;outline:0;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:#fff}
 #hl i{font-style:normal}.c{color:#6a9955}.s{color:#ce9178}.n{color:#b5cea8}.f{color:#dcdcaa}.k1{color:#c586c0}.k2{color:#569cd6}.t{color:#4ec9b0}.v{color:#9cdcfe}
 .bar{display:flex;gap:6px;overflow-x:auto;padding:6px 8px;background:var(--bar)}
 .bar button{flex:none;height:36px;font-family:ui-monospace,monospace}
@@ -30,15 +32,17 @@ header{display:flex;gap:6px;align-items:center;padding:8px;background:var(--bar)
 .e{color:#f48771}
 #ov{position:fixed;inset:0;background:#0009;display:none;align-items:flex-end;z-index:5}#ov.show{display:flex}
 #sheet{width:100%;max-height:85%;overflow:auto;background:var(--bar);border-radius:16px 16px 0 0;padding:16px 12px calc(16px + env(safe-area-inset-bottom));border-top:3px solid var(--ac)}
-#sheet h2{margin:0 0 10px;font-size:18px}
-.row{display:flex;gap:8px;margin-bottom:8px}.row button{flex:1}.row .nm{flex:3;text-align:left;background:#2d2d30;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row .nm.on{outline:2px solid var(--ac)}
+#sheet h2{margin:0 0 10px;font-size:18px;overflow-wrap:anywhere}
 #sheet input[type=text]{width:100%;height:44px;font:16px system-ui,sans-serif;background:#1e1e1e;color:var(--fg);border:1px solid #555;border-radius:8px;padding:0 10px;margin-bottom:10px}
-.row .fd{background:#094771}.mv{display:block;width:100%;margin-bottom:8px;text-align:left}.in{margin-left:14px}
+.row{display:flex;gap:8px;margin-bottom:8px}.row button{flex:1}
+.row .nm{flex:3;text-align:left;background:#2d2d30;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:none}.row .nm.on{outline:2px solid var(--ac)}
+.row .fd{background:#094771}.in{margin-left:14px}
+.mv{display:block;width:100%;margin-bottom:8px;text-align:left}
 .pk{display:flex;align-items:center;gap:10px;padding:10px;background:#2d2d30;border-radius:8px;margin-bottom:6px;word-break:break-all}.pk input{width:22px;height:22px;flex:none}
 .cap{font-size:13px;color:#9da5b4;margin:0 0 10px}
 </style></head><body>
 <header><button id="nm"></button><button id="un">Undo</button><button id="re">Redo</button><button id="run">&#9654; Run</button><button id="stop">&#9632; Stop</button></header>
-<div id="ed"><div id="gut"></div><div id="cw"><pre id="hl" aria-hidden="true"></pre><textarea id="ta" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Code editor"></textarea></div></div>
+<div id="ed"><div id="cw"><div id="row"><div id="gut"></div><div id="sc"><pre id="hl" aria-hidden="true"></pre><textarea id="ta" wrap="off" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Code editor"></textarea></div></div></div></div>
 <div class="bar" id="sg"></div><div class="bar" id="sy"></div>
 <div id="op"><div id="oh">Output <span id="st"></span><button id="sz">Panel size</button><button id="clr">Clear</button></div><pre id="out"></pre></div>
 <div id="ov"><div id="sheet"></div></div><input type="file" id="imp" multiple hidden>
@@ -59,99 +63,6 @@ function hi(src){let o='',i=0,m,prev='';RE.lastIndex=0;
   o+='<i class="'+c+'">'+esc(t)+'</i>'}
  return o+esc(src.slice(i))+'\n'}
 /*ENDHL*/
-const $=id=>document.getElementById(id);
-const h=(t,a={},...c)=>{const e=document.createElement(t);for(const k in a){const v=a[k];if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k in e)e[k]=v;else e.setAttribute(k,v)}c.flat().forEach(x=>x!=null&&e.append(x));return e};
-const ta=$('ta'),hl=$('hl'),gut=$('gut'),out=$('out'),K='pypocket-v1';
-const mk=(name,code='',folder='')=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,code,folder});
-let S={files:[{id:'a1',name:'main.py',code:'name = "Akira"\nfor i in range(3):\n    print(f"Hello, {name} {i}")\n'}],cur:'a1',fs:14};
-try{const r=JSON.parse(localStorage.getItem(K));if(r&&r.files&&r.files.length)S=r}catch(e){}
-S.folders=S.folders||[];S.open=S.open||{};S.files.forEach(f=>f.folder=f.folder||'');
-const cur=()=>S.files.find(f=>f.id===S.cur)||S.files[0];
-let st;const save=()=>{clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}},300)};
-function sync(){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;gut.scrollTop=ta.scrollTop}
-function paint(){const v=ta.value;hl.innerHTML=hi(v);gut.textContent=Array.from({length:v.split('\n').length},(_,i)=>i+1).join('\n');sync()}
-let pr,pk;
-function eff(px){if(!pr){pr=h('span',{style:'position:absolute;left:-9999px;visibility:hidden;white-space:pre;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:0'},'MMMMMMMMMM');document.body.append(pr);pr.style.fontSize='100px';pk=pr.getBoundingClientRect().width/1000}pr.style.fontSize=px+'px';return pr.getBoundingClientRect().width/10/pk}
-function fs(){S.fs=Math.min(28,Math.max(6,S.fs));const r=document.documentElement.style;r.setProperty('--fs',S.fs+'px');r.setProperty('--lh',Math.max(3,Math.round(eff(S.fs)*1.5))+'px')}
-function load(){ta.value=cur().code;$('nm').textContent=cur().name+' \u25BE';paint();S.cur=cur().id}
-let busy=false;const put=t=>{busy=true;document.execCommand('insertText',false,t);busy=false};
-const ins=t=>{ta.focus();put(t)};
-function suggest(){const p=ta.selectionStart,v=ta.value,m=/[A-Za-z_]\w*$/.exec(v.slice(0,p)),sg=$('sg');sg.replaceChildren();
- if(!m||m[0].length<2||ta.selectionEnd!==p){sg.style.display='none';return}
- const w=m[0],set=new Set([...KW1,...KW2,...BI,...TY,...(v.match(/[A-Za-z_]\w{2,}/g)||[])]);
- const r=[...set].filter(x=>x!==w&&x.startsWith(w)).sort((a,b)=>a.length-b.length).slice(0,8);
- sg.style.display=r.length?'flex':'none';r.forEach(x=>sg.append(bt(x,()=>{ta.focus();ta.setSelectionRange(p-w.length,p);put(x)})))}
-const bt=(l,f)=>h('button',{textContent:l,onmousedown:e=>e.preventDefault(),onclick:f});
-const CL={'(':')','[':']','{':'}','"':'"',"'":"'"};
-function sym(s){ta.focus();const p=ta.selectionStart,v=ta.value;
- if(')]}"\''.includes(s)&&v[p]===s&&ta.selectionEnd===p){ta.setSelectionRange(p+1,p+1);return}
- if(CL[s]&&ta.selectionEnd===p){put(s+CL[s]);ta.setSelectionRange(p+1,p+1)}else put(s)}
-ta.addEventListener('input',e=>{
- if(!busy&&/^insert(LineBreak|Paragraph|Text|CompositionText)$/.test(e.inputType||'')&&ta.selectionStart===ta.selectionEnd){
-  const p=ta.selectionStart,v=ta.value,ch=v[p-1],nx=v[p],pv=v[p-2]||'';
-  if(ch==='\n'){const line=v.slice(v.lastIndexOf('\n',p-2)+1,p-1),ind=/^[ \t]*/.exec(line)[0]+(/:\s*$/.test(line)?'    ':'');if(ind)put(ind)}
-  else if(')]}"\''.includes(ch)&&nx===ch){busy=true;document.execCommand('forwardDelete');busy=false}
-  else if(CL[ch]&&!(/["']/.test(ch)&&/\w/.test(pv))&&!(nx&&/\w/.test(nx))){put(CL[ch]);ta.setSelectionRange(p,p)}}
- cur().code=ta.value;save();paint();suggest()});
-ta.addEventListener('scroll',sync);ta.addEventListener('click',suggest);
-let tx=0,ty=0,tl=0,hz=null,pd=0,pf=0;
-const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-ta.addEventListener('touchstart',e=>{if(e.touches.length===2){pd=dist(e.touches);pf=S.fs;hz=null}else{const t=e.touches[0];tx=t.clientX;ty=t.clientY;tl=ta.scrollLeft;hz=null;pd=0}},{passive:true});
-ta.addEventListener('touchmove',e=>{
- if(e.touches.length===2&&pd){const n=Math.min(28,Math.max(6,Math.round(pf*dist(e.touches)/pd)));if(n!==S.fs){S.fs=n;fs();paint();save()}if(e.cancelable)e.preventDefault();return}
- if(e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-tx,dy=t.clientY-ty;
- if(hz===null&&(Math.abs(dx)>8||Math.abs(dy)>8))hz=Math.abs(dx)>Math.abs(dy);
- if(hz&&e.cancelable){e.preventDefault();ta.scrollLeft=tl-dx;sync()}},{passive:false});
-ta.addEventListener('focus',()=>$('op').style.display='none');
-ta.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==ta){$('op').style.display='';$('sg').style.display='none'}},150));
-$('sy').append(bt('A\u2212',()=>zoom(-1)),bt('A+',()=>zoom(1)));
-['Tab',':','(',')','[',']','{','}','"',"'",'=','#','_','.',',','+','-','*','/','<','>'].forEach((s,i)=>$('sy').append(bt(s,()=>sym(i?s:'    '))));
-$('un').onmousedown=$('re').onmousedown=e=>e.preventDefault();
-$('un').onclick=()=>{ta.focus();document.execCommand('undo')};$('re').onclick=()=>{ta.focus();document.execCommand('redo')};
-/* engine */
-const WSRC=`importScripts('https://cdn.jsdelivr.net/npm/pyodide@0.26.4/pyodide.js');
-let py,fl,u8;
-function ask(p){if(!fl)throw new Error('input() needs the installed app (cross-origin isolation is off here).');
-postMessage({t:'in',p:String(p)});Atomics.store(fl,0,0);Atomics.wait(fl,0,0);const n=fl[1];return new TextDecoder().decode(u8.slice(8,8+n))}
-async function boot(){py=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/npm/pyodide@0.26.4/'});
-py.setStdout({batched:s=>postMessage({t:'o',s:s+'\\n'})});py.setStderr({batched:s=>postMessage({t:'e',s:s+'\\n'})});
-py.globals.set('__ask',ask);py.runPython('import builtins\\nbuiltins.input=lambda p="":__ask(p)');postMessage({t:'ready'})}
-onmessage=async e=>{const m=e.data;
-if(m.t==='init'){if(m.sab){fl=new Int32Array(m.sab);u8=new Uint8Array(m.sab)}boot().catch(x=>postMessage({t:'fail',s:String(x)}))}
-if(m.t==='run'){try{const g=py.globals.get('dict')();g.set('__name__','__main__');await py.runPythonAsync(m.code,{globals:g});g.destroy();postMessage({t:'done'})}catch(x){postMessage({t:'done',err:String(x.message||x)})}}};`;
-let wk,ready=false,running=false,pend=false,t0,fl,u8,sab=null;
-const stat=(s,bad)=>{$('st').textContent=s;$('st').style.color=bad?'#f48771':''};
-const add=(s,bad)=>{out.append(h('span',{className:bad?'e':'',textContent:s}));out.scrollTop=out.scrollHeight};
-function ui(){$('run').style.display=running?'none':'';$('stop').style.display=running?'':'none'}
-function engine(){ready=false;stat('Loading Python (first time is about 10 MB)');
- try{wk=new Worker(URL.createObjectURL(new Blob([WSRC],{type:'text/javascript'})))}catch(e){stat('Python engine is unavailable in this preview. Open the installed app.',1);return}
- if(self.crossOriginIsolated){sab=new SharedArrayBuffer(8192);fl=new Int32Array(sab);u8=new Uint8Array(sab)}else sab=fl=u8=null;
- wk.onmessage=e=>{const m=e.data;
-  if(m.t==='ready'){ready=true;stat('Python ready');if(pend){pend=false;run()}}
-  else if(m.t==='o')add(m.s);else if(m.t==='e')add(m.s,1);
-  else if(m.t==='fail')stat('Engine failed to load: '+m.s,1);
-  else if(m.t==='in'){dlg(m.p||'Your program asks for input','',v=>{v=v||'';const b=new TextEncoder().encode(v).slice(0,8000);u8.set(b,8);fl[1]=b.length;add(m.p+v+'\n');Atomics.store(fl,0,1);Atomics.notify(fl,0)},true)}
-  else if(m.t==='done'){running=false;ui();
-   if(m.err){let x=m.err;const i=x.indexOf('File "<exec>"');if(i>-1)x='Traceback (most recent call last):\n  '+x.slice(i);add(x.trim()+'\n',1);stat('Error',1)}
-   else stat('Finished in '+((performance.now()-t0)/1000).toFixed(2)+' s')}};
- wk.onerror=e=>stat('Engine error: '+(e.message||'could not load'),1);
- wk.postMessage({t:'init',sab})}
-function run(){if(running)return;ta.blur();
- if(!wk){stat('Python engine is unavailable in this preview. Open the installed app.',1);return}
- if(!ready){pend=true;stat('Loading Python, will run when ready');return}
- out.textContent='';running=true;ui();t0=performance.now();stat('Running\u2026');wk.postMessage({t:'run',code:ta.value})}
-function stop(){if(!running)return;wk.terminate();running=false;add('\nStopped.\n',1);ui();engine();stat('Stopped, restarting Python\u2026',1)}
-$('run').onclick=run;$('stop').onclick=stop;$('clr').onclick=()=>out.textContent='';
-let pz=0;$('sz').onclick=()=>{pz=(pz+1)%3;$('op').style.height=['36%','14%','62%'][pz]};
-/* scripts sheet */
-function sheet(...c){$('sheet').replaceChildren(...c);$('ov').classList.add('show')}
-let scr='',lock=false,arm=null,armT;
-const closeS=()=>{scr='';$('ov').classList.remove('show')};
-$('ov').onclick=e=>{if(e.target.id==='ov'&&!lock)closeS()};
-function dlg(title,def,ok,lk){lock=!!lk;scr='d';const i=h('input',{type:'text',value:def,autocomplete:'off',autocapitalize:'off',spellcheck:false});
- const done=v=>{lock=false;closeS();ok(v)};
- i.addEventListener('keydown',e=>{if(e.key==='Enter')done(i.value)});
- sheet(h('h2',{},title),i,h('div',{className:'row'},h('button',{textContent:'Cancel',onclick:()=>done(lk?'':null)}),h('button',{textContent:'OK',onclick:()=>done(i.value)})));setTimeout(()=>i.focus(),50)}
 /*ZIP*/
 const crcT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
 const crc=u=>{let c=-1;for(let i=0;i<u.length;i++)c=crcT[(c^u[i])&255]^(c>>>8);return(c^-1)>>>0};
@@ -173,33 +84,131 @@ async function unzip(buf){const v=new DataView(buf),u=new Uint8Array(buf),res=[]
   res.push({path:name,text:new TextDecoder().decode(d)})}
  return res}
 /*ENDZIP*/
-const fnames=()=>[...new Set([...S.folders,...S.files.map(f=>f.folder).filter(Boolean)])];
-const dl=(b,n)=>{const a=h('a',{href:URL.createObjectURL(b),download:n});document.body.append(a);a.click();a.remove()};
-const exp=()=>dl(new Blob([ta.value],{type:'text/plain'}),cur().name);
-const expZip=()=>dl(zipOf(S.files.map(f=>({path:(f.folder?f.folder.replace(/\//g,'_')+'/':'')+f.name.replace(/\//g,'_'),text:f.code}))),'pocket-python-scripts.zip');
-function newF(){const f=mk('script'+(S.files.length+1)+'.py','',cur().folder);S.files.push(f);S.cur=f.id;load();save()}
-function zoom(d){S.fs=Math.min(28,Math.max(6,S.fs+d));fs();paint();save()}
+const $=id=>document.getElementById(id);
+const h=(t,a={},...c)=>{const e=document.createElement(t);for(const k in a){const v=a[k];if(k.startsWith('on'))e.addEventListener(k.slice(2),v);else if(k in e)e[k]=v;else e.setAttribute(k,v)}c.flat().forEach(x=>x!=null&&e.append(x));return e};
+const ta=$('ta'),hl=$('hl'),gut=$('gut'),cw=$('cw'),out=$('out'),K='pypocket-v1';
+const mk=(name,code='',folder='')=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,code,folder});
+let S={files:[mk('main.py','name = "Akira"\nfor i in range(3):\n    print(f"Hello, {name} {i}")\n')],cur:'',fs:14,folders:[],open:{}};
+S.cur=S.files[0].id;
+try{const r=JSON.parse(localStorage.getItem(K));if(r&&r.files&&r.files.length)S=r}catch(e){}
+S.folders=S.folders||[];S.open=S.open||{};S.files.forEach(f=>f.folder=f.folder||'');
+const cur=()=>S.files.find(f=>f.id===S.cur)||S.files[0];
+let st;const save=()=>{clearTimeout(st);st=setTimeout(()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}},300)};
+/* text size: measure the real drawn size so line spacing always matches */
+let pr,pk,LH=21;
+function eff(px){if(!pr){pr=h('span',{style:'position:absolute;left:-9999px;visibility:hidden;white-space:pre;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:0'},'MMMMMMMMMM');document.body.append(pr);pr.style.fontSize='100px';pk=pr.getBoundingClientRect().width/1000}pr.style.fontSize=px+'px';return pr.getBoundingClientRect().width/10/pk}
+function fs(){S.fs=Math.min(28,Math.max(6,S.fs));LH=eff(S.fs)*1.5;const r=document.documentElement.style;r.setProperty('--fs',S.fs+'px');r.setProperty('--lh',LH.toFixed(2)+'px')}
+function setFs(n,x,y){n=Math.min(28,Math.max(6,Math.round(n*10)/10));if(n===S.fs)return;
+ const r=cw.getBoundingClientRect(),g=gut.offsetWidth,cx=(x??r.left+r.width/2)-r.left,cy=(y??r.top+r.height/2)-r.top;
+ const u=cw.scrollLeft+cx-g,v=cw.scrollTop+cy,l0=LH;S.fs=n;fs();const k=LH/l0;
+ cw.scrollLeft=u*k+g-cx;cw.scrollTop=v*k-cy;save()}
+function paint(){const v=ta.value;hl.innerHTML=hi(v);gut.textContent=Array.from({length:v.split('\n').length},(_,i)=>i+1).join('\n')}
+function load(){S.cur=cur().id;ta.value=cur().code;$('nm').textContent=cur().name+' \u25BE';paint();cw.scrollTo(0,0)}
+/* pinch zoom around the point between your fingers */
+let pd=0,pf=0;
+const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+cw.addEventListener('touchstart',e=>{pd=e.touches.length===2?dist(e.touches):0;pf=S.fs},{passive:true});
+cw.addEventListener('touchmove',e=>{if(e.touches.length===2&&pd){e.preventDefault();const[a,b]=e.touches;setFs(pf*dist(e.touches)/pd,(a.clientX+b.clientX)/2,(a.clientY+b.clientY)/2)}},{passive:false});
+cw.addEventListener('touchend',()=>{pd=0});
+/* editing helpers */
+let busy=false;const put=t=>{busy=true;document.execCommand('insertText',false,t);busy=false};
+const bt=(l,f)=>h('button',{textContent:l,onmousedown:e=>e.preventDefault(),onclick:f});
+function suggest(){const p=ta.selectionStart,v=ta.value,m=/[A-Za-z_]\w*$/.exec(v.slice(0,p)),sg=$('sg');sg.replaceChildren();
+ if(!m||m[0].length<2||ta.selectionEnd!==p){sg.style.display='none';return}
+ const w=m[0],set=new Set([...KW1,...KW2,...BI,...TY,...(v.match(/[A-Za-z_]\w{2,}/g)||[])]);
+ const r=[...set].filter(x=>x!==w&&x.startsWith(w)).sort((a,b)=>a.length-b.length).slice(0,8);
+ sg.style.display=r.length?'flex':'none';r.forEach(x=>sg.append(bt(x,()=>{ta.focus();ta.setSelectionRange(p-w.length,p);put(x)})))}
+const CL={'(':')','[':']','{':'}','"':'"',"'":"'"};
+function sym(s){ta.focus();const p=ta.selectionStart,v=ta.value;
+ if(')]}"\''.includes(s)&&v[p]===s&&ta.selectionEnd===p){ta.setSelectionRange(p+1,p+1);return}
+ if(CL[s]&&ta.selectionEnd===p){put(s+CL[s]);ta.setSelectionRange(p+1,p+1)}else put(s)}
+ta.addEventListener('input',e=>{
+ if(!busy&&/^insert(LineBreak|Paragraph|Text|CompositionText)$/.test(e.inputType||'')&&ta.selectionStart===ta.selectionEnd){
+  const p=ta.selectionStart,v=ta.value,ch=v[p-1],nx=v[p],pv=v[p-2]||'';
+  if(ch==='\n'){const line=v.slice(v.lastIndexOf('\n',p-2)+1,p-1),ind=/^[ \t]*/.exec(line)[0]+(/:\s*$/.test(line)?'    ':'');if(ind)put(ind)}
+  else if(')]}"\''.includes(ch)&&nx===ch){busy=true;document.execCommand('forwardDelete');busy=false}
+  else if(CL[ch]&&!(/["']/.test(ch)&&/\w/.test(pv))&&!(nx&&/\w/.test(nx))){put(CL[ch]);ta.setSelectionRange(p,p)}}
+ cur().code=ta.value;save();paint();ta.scrollTop=ta.scrollLeft=0;suggest()});
+ta.addEventListener('click',suggest);
+ta.addEventListener('focus',()=>$('op').style.display='none');
+ta.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==ta){$('op').style.display='';$('sg').style.display='none'}},150));
+$('sy').append(bt('A\u2212',()=>setFs(S.fs-1)),bt('A+',()=>setFs(S.fs+1)));
+['Tab',':','(',')','[',']','{','}','"',"'",'=','#','_','.',',','+','-','*','/','<','>'].forEach((s,i)=>$('sy').append(bt(s,()=>sym(i?s:'    '))));
+$('un').onmousedown=$('re').onmousedown=e=>e.preventDefault();
+$('un').onclick=()=>{ta.focus();document.execCommand('undo')};$('re').onclick=()=>{ta.focus();document.execCommand('redo')};
+/* engine */
+const WSRC=`importScripts('https://cdn.jsdelivr.net/npm/pyodide@0.26.4/pyodide.js');
+let py,fl,u8;
+function ask(p){if(!fl)throw new Error('input() needs the installed app (cross-origin isolation is off here).');
+postMessage({t:'in',p:String(p)});Atomics.store(fl,0,0);Atomics.wait(fl,0,0);const n=fl[1];return new TextDecoder().decode(u8.slice(8,8+n))}
+async function boot(){py=await loadPyodide({indexURL:'https://cdn.jsdelivr.net/npm/pyodide@0.26.4/'});
+py.setStdout({batched:s=>postMessage({t:'o',s:s+'\\n'})});py.setStderr({batched:s=>postMessage({t:'e',s:s+'\\n'})});
+py.globals.set('__ask',ask);py.runPython('import builtins\\nbuiltins.input=lambda p="":__ask(p)');postMessage({t:'ready'})}
+onmessage=async e=>{const m=e.data;
+if(m.t==='init'){if(m.sab){fl=new Int32Array(m.sab);u8=new Uint8Array(m.sab)}boot().catch(x=>postMessage({t:'fail',s:String(x)}))}
+if(m.t==='run'){try{const g=py.globals.get('dict')();g.set('__name__','__main__');await py.runPythonAsync(m.code,{globals:g});g.destroy();postMessage({t:'done'})}catch(x){postMessage({t:'done',err:String(x.message||x)})}}};`;
+let wk,ready=false,running=false,pend=false,t0,fl,u8,sab=null;
+const stat=(s,bad)=>{$('st').textContent=s;$('st').style.color=bad?'#f48771':''};
+const add=(s,bad)=>{out.append(h('span',{className:bad?'e':'',textContent:s}));out.scrollTop=out.scrollHeight};
+const ui=()=>{$('run').style.display=running?'none':'';$('stop').style.display=running?'':'none'};
+function engine(){ready=false;stat('Loading Python (first time is about 10 MB)');
+ try{wk=new Worker(URL.createObjectURL(new Blob([WSRC],{type:'text/javascript'})))}catch(e){wk=null;stat('Python engine is unavailable in this preview. Open the installed app.',1);return}
+ if(self.crossOriginIsolated){sab=new SharedArrayBuffer(8192);fl=new Int32Array(sab);u8=new Uint8Array(sab)}else sab=fl=u8=null;
+ wk.onmessage=e=>{const m=e.data;
+  if(m.t==='ready'){ready=true;stat('Python ready');if(pend){pend=false;run()}}
+  else if(m.t==='o')add(m.s);else if(m.t==='e')add(m.s,1);
+  else if(m.t==='fail')stat('Engine failed to load: '+m.s,1);
+  else if(m.t==='in')dlg(m.p||'Your program asks for input','',v=>{v=v||'';const b=new TextEncoder().encode(v).slice(0,8000);u8.set(b,8);fl[1]=b.length;add(m.p+v+'\n');Atomics.store(fl,0,1);Atomics.notify(fl,0)},true);
+  else if(m.t==='done'){running=false;ui();
+   if(m.err){let x=m.err;const i=x.indexOf('File "<exec>"');if(i>-1)x='Traceback (most recent call last):\n  '+x.slice(i);add(x.trim()+'\n',1);stat('Error',1)}
+   else stat('Finished in '+((performance.now()-t0)/1000).toFixed(2)+' s')}};
+ wk.onerror=e=>stat('Engine error: '+(e.message||'could not load'),1);
+ wk.postMessage({t:'init',sab})}
+function run(){if(running)return;ta.blur();
+ if(!wk){stat('Python engine is unavailable in this preview. Open the installed app.',1);return}
+ if(!ready){pend=true;stat('Loading Python, will run when ready');return}
+ out.textContent='';running=true;ui();t0=performance.now();stat('Running\u2026');wk.postMessage({t:'run',code:ta.value})}
+function stop(){if(!running)return;wk.terminate();running=false;add('\nStopped.\n',1);ui();engine();stat('Stopped, restarting Python\u2026',1)}
+$('run').onclick=run;$('stop').onclick=stop;$('clr').onclick=()=>out.textContent='';
+let pz=0;$('sz').onclick=()=>{pz=(pz+1)%3;$('op').style.height=['36%','14%','62%'][pz]};
+/* scripts menu */
+let scr='',lock=false,arm=null,armT,guard=0;
+const sheet=(...c)=>{$('sheet').replaceChildren(...c);$('ov').classList.add('show')};
+const closeS=()=>{scr='';$('ov').classList.remove('show')};
+$('ov').onclick=e=>{if(e.target.id==='ov'&&!lock)closeS()};
+document.addEventListener('click',e=>{if(Date.now()-guard<600){e.stopPropagation();e.preventDefault()}},true);
+function press(el,tap,hold){let t,fired=false;const go=()=>{fired=false;clearTimeout(t);t=setTimeout(()=>{fired=true;guard=Date.now();hold()},450)},no=()=>clearTimeout(t);
+ el.addEventListener('touchstart',go,{passive:true});['touchend','touchmove','touchcancel','mouseup','mouseleave'].forEach(k=>el.addEventListener(k,no,{passive:true}));
+ el.addEventListener('mousedown',go);el.addEventListener('contextmenu',e=>e.preventDefault());
+ el.addEventListener('click',()=>{if(fired){fired=false;return}tap()})}
+function dlg(title,def,ok,lk){lock=!!lk;scr='d';const i=h('input',{type:'text',value:def,autocomplete:'off',autocapitalize:'off',spellcheck:false});
+ const done=v=>{lock=false;closeS();ok(v)};
+ i.addEventListener('keydown',e=>{if(e.key==='Enter')done(i.value)});
+ sheet(h('h2',{},title),i,h('div',{className:'row'},h('button',{textContent:'Cancel',onclick:()=>done(lk?'':null)}),h('button',{textContent:'OK',onclick:()=>done(i.value)})));setTimeout(()=>i.focus(),50)}
 const two=(key,label,go,back)=>h('button',{textContent:arm===key?'Tap again':label,style:'color:#ff8a80',onclick:()=>{if(arm!==key){arm=key;clearTimeout(armT);armT=setTimeout(()=>{arm=null;if(scr===key)back()},3000);back();return}arm=null;go()}});
+const fnames=()=>[...new Set([...S.folders,...S.files.map(f=>f.folder).filter(Boolean)])];
+const safe=s=>s.replace(/[\\/]/g,'_');
+const dl=(b,n)=>{const a=h('a',{href:URL.createObjectURL(b),download:n});document.body.append(a);a.click();a.remove()};
 function files(){scr='l';
- const row=(f,n)=>h('div',{className:'row'+(n?' in':'')},h('button',{className:'nm'+(f.id===S.cur?' on':''),textContent:f.name,onclick:()=>{S.cur=f.id;load();save();closeS()}}),h('button',{textContent:'Options',onclick:()=>opts(f)}));
+ const row=(f,n)=>{const b=h('button',{className:'nm'+(f.id===S.cur?' on':''),textContent:f.name});press(b,()=>{S.cur=f.id;load();save();closeS()},()=>opts(f));return h('div',{className:'row'+(n?' in':'')},b,h('button',{textContent:'Options',onclick:()=>opts(f)}))};
  sheet(h('h2',{},'Scripts'),
-  ...fnames().flatMap(n=>{const fl=S.files.filter(f=>f.folder===n),op=S.open[n];return[h('div',{className:'row'},h('button',{className:'nm fd',textContent:(op?'\u25BE ':'\u25B8 ')+n+' ('+fl.length+')',onclick:()=>{S.open[n]=!op;save();files()}}),h('button',{textContent:'Options',onclick:()=>fopts(n)})),...(op?fl.map(f=>row(f,1)):[])]}),
+  ...fnames().flatMap(n=>{const fl=S.files.filter(f=>f.folder===n),op=S.open[n],b=h('button',{className:'nm fd',textContent:(op?'\u25BE ':'\u25B8 ')+n+' ('+fl.length+')'});press(b,()=>{S.open[n]=!op;save();files()},()=>fopts(n));return[h('div',{className:'row'},b,h('button',{textContent:'Options',onclick:()=>fopts(n)})),...(op?fl.map(f=>row(f,1)):[])]}),
   ...S.files.filter(f=>!f.folder).map(f=>row(f)),
-  h('p',{className:'cap'},'Tap a script to open it. Tap a folder to open or close it.'),
-  h('div',{className:'row'},h('button',{textContent:'+ New script',onclick:()=>{newF();closeS()}}),h('button',{textContent:'+ New folder',onclick:()=>dlg('New folder','',v=>{v=v&&v.trim();if(v&&!fnames().includes(v)){S.folders.push(v);S.open[v]=true;save()}files()})})),
+  h('p',{className:'cap'},'Tap to open. Long press a script or folder for export, rename, move and delete.'),
+  h('div',{className:'row'},h('button',{textContent:'+ New script',onclick:()=>{const f=mk('script'+(S.files.length+1)+'.py','',cur().folder);S.files.push(f);S.cur=f.id;load();save();closeS()}}),h('button',{textContent:'+ New folder',onclick:()=>dlg('New folder','',v=>{v=v&&v.trim();if(v&&!fnames().includes(v)){S.folders.push(v);S.open[v]=true;save()}files()})})),
   h('div',{className:'row'},h('button',{textContent:'Import files or .zip',onclick:()=>$('imp').click()})),
-  h('div',{className:'row'},h('button',{textContent:'Export this script (.py)',onclick:exp}),h('button',{textContent:'Export all (.zip)',onclick:expZip})),
-  h('div',{className:'row'},h('button',{textContent:'Smaller text',onclick:()=>zoom(-1)}),h('button',{textContent:'Bigger text',onclick:()=>zoom(1)})),
   h('button',{textContent:'Close',style:'width:100%',onclick:closeS}))}
 function opts(f){scr='o'+f.id;sheet(h('h2',{},f.name),
+ h('div',{className:'row'},h('button',{textContent:'Export as .py',onclick:()=>dl(new Blob([f.code],{type:'text/plain'}),safe(f.name))}),h('button',{textContent:'Export as .zip',onclick:()=>dl(zipOf([{path:safe(f.name),text:f.code}]),safe(f.name).replace(/\.py$/i,'')+'.zip')})),
  h('div',{className:'row'},h('button',{textContent:'Rename',onclick:()=>dlg('Rename script',f.name,v=>{if(v&&v.trim()){f.name=v.trim();save();load()}files()})}),h('button',{textContent:'Move to folder',onclick:()=>move(f)})),
- h('div',{className:'row'},two('o'+f.id,'Delete',()=>{S.files=S.files.filter(x=>x!==f);if(!S.files.length)S.files.push(mk('main.py'));if(S.cur===f.id)S.cur=S.files[0].id;save();load();files()},()=>opts(f)),h('button',{textContent:'Back',onclick:files})))}
+ h('div',{className:'row'},two('o'+f.id,'Delete',()=>{S.files=S.files.filter(x=>x!==f);if(!S.files.length)S.files.push(mk('main.py'));save();load();files()},()=>opts(f)),h('button',{textContent:'Back',onclick:files})))}
 function move(f){scr='m';sheet(h('h2',{},'Move '+f.name+' to'),...['',...fnames()].map(n=>h('button',{className:'nm mv'+(f.folder===n?' on':''),textContent:n||'No folder',onclick:()=>{f.folder=n;save();files()}})),
  h('button',{className:'mv',textContent:'+ New folder',onclick:()=>dlg('New folder','',v=>{v=v&&v.trim();if(v){if(!S.folders.includes(v))S.folders.push(v);f.folder=v;S.open[v]=true;save()}files()})}),h('button',{className:'mv',textContent:'Back',onclick:()=>opts(f)}))}
 function fopts(n){scr='f'+n;sheet(h('h2',{},'Folder: '+n),
+ h('div',{className:'row'},h('button',{textContent:'Export folder as .zip',onclick:()=>dl(zipOf(S.files.filter(f=>f.folder===n).map(f=>({path:safe(n)+'/'+safe(f.name),text:f.code}))),safe(n)+'.zip')})),
  h('div',{className:'row'},h('button',{textContent:'Rename',onclick:()=>dlg('Rename folder',n,v=>{v=v&&v.trim();if(v&&v!==n){S.files.forEach(f=>{if(f.folder===n)f.folder=v});S.folders=S.folders.map(x=>x===n?v:x);S.open[v]=S.open[n];delete S.open[n];save()}files()})}),two('f'+n,'Delete folder',()=>{S.files.forEach(f=>{if(f.folder===n)f.folder=''});S.folders=S.folders.filter(x=>x!==n);delete S.open[n];save();files()},()=>fopts(n))),
  h('p',{className:'cap'},'Deleting a folder keeps its scripts. They move to the main list.'),h('button',{textContent:'Back',style:'width:100%',onclick:files}))}
-$('nm').onclick=files;
+/* import */
 function done(c){closeS();if(c){S.cur=S.files[S.files.length-1].id;load();save();stat('Imported '+c+' file'+(c>1?'s':''))}else stat('Nothing imported',1)}
 function addZ(list){for(const z of list){const ps=z.path.split('/'),nm=ps.pop(),fo=ps[0]||'';if(fo&&!S.folders.includes(fo))S.folders.push(fo);S.files.push(mk(nm,z.text,fo))}done(list.length)}
 function zipPick(en){scr='z';const sel=new Set(),ib=h('button',{textContent:'Import selected (0)',onclick:()=>addZ(en.filter((_,i)=>sel.has(i)))});
@@ -213,6 +222,7 @@ $('imp').onchange=async e=>{let c=0;const zs=[];for(const f of e.target.files){t
  else{S.files.push(mk(f.name,await f.text(),cur().folder));c++}}catch(x){}}
  e.target.value='';
  if(zs.length>1){if(c){S.cur=S.files[S.files.length-1].id;load();save()}zipPick(zs)}else if(zs.length===1)addZ(zs);else done(c)};
+$('nm').onclick=files;
 fs();load();engine();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
